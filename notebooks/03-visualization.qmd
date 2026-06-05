@@ -28,8 +28,8 @@ ggplot(table_02, aes(x = ph, y = nugent_score, color = arm)) +
 
 **Plot 1 (above). Answer in plain words:**
 
-1. What is the mark?
-2. What mark property comes from what column?
+1. What is the mark? 
+2. What mark property comes from what column? The arm and pH
 3. How many rows of data made each mark?
 
 ```{r}
@@ -37,10 +37,20 @@ ggplot(table_02, aes(x = ph, y = nugent_score, color = arm)) +
 #| fig-width: 6
 #| fig-height: 4
 ggplot(table_02, aes(x = arm, y = ph, fill = arm)) +
-  geom_boxplot()
+  geom_boxplot() + coord_flip()
 ```
 
 **Plot 2 (above). Answer the same three questions.**
+
+**Experiment.** Want the two boxes stacked on top of each other instead of side-by-side? Add `coord_flip()` to the boxplot — it swaps the x and y axes, turning the boxes horizontal and stacking them vertically.
+
+```{r}
+#| fig-width: 6
+#| fig-height: 4
+ggplot(table_02, aes(x = ph, y = arm, fill = arm)) +
+  geom_boxplot() +
+  coord_flip()
+```
 
 **Sketch.** Draw on paper or describe in words a plot that answers "does pH differ between treatment arms?" Name the mark, the mappings, and how many rows make each mark.
 
@@ -51,7 +61,8 @@ ggplot(table_02, aes(x = arm, y = ph, fill = arm)) +
 Each step adds one piece on top of the previous plot. Run after each.
 
 ```{r}
-# step 1: ggplot(table_02, aes(x = ph, y = nugent_score)) + geom_point()
+# step 1:
+ggplot(table_02, aes(x = ph, y = nugent_score)) + geom_point()
 ```
 
 ```{r}

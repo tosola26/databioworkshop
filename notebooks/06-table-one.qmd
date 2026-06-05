@@ -30,9 +30,10 @@ For each non-pid column of `table_01` (`arm`, `smoker`, `age`, `education`, `sex
 
 **1. `arm`**
 
-- How will `tbl_summary(by = arm)` summarise it? *Your answer:*
-- What test will `add_p()` pick? *Your answer:*
+- How will `tbl_summary(by = arm)` summarise it? *Your answer:* it won't summarise it since arm is the variable, so it is automatically dropped from the table. It will only summarise the columns
 
+- What test will `add_p()` pick? *Your answer:*
+No test because arm is not on the table. It is the variable
 **2. `smoker`**
 
 - *Your answer (summary, test):*
@@ -57,23 +58,46 @@ Each step adds one piece on top of the previous table. Run after each step.
 # step 1: tbl_summary defaults
 table_01 |>
   select(-pid, -sex) |>
-  tbl_summary(by = arm)
+  tbl_summary(by = arm) |>
+  add_p()
+
 ```
 
 ```{r}
 # step 2: add p-values
 # (modify the previous chunk by adding `|> add_p()`)
+table_01 |>
+  select(-pid, -sex) |>
+  tbl_summary(by = arm) |>
+  add_p()
+
 ```
 
 ```{r}
 # step 3: override age to mean (SD) + t-test
-# statistic = list(age ~ "{mean} ({sd})")
-# test = list(age ~ "t.test")
+table_01 |>
+  select(-pid, -sex) |>
+  tbl_summary(
+    by = arm,
+    statistic = list(age ~ "{mean} ({sd})")
+  ) |>
+  add_p(test = list(age ~ "t.test"))
+
 ```
 
 ```{r}
 # step 4: polish
-# add `|> add_overall() |> bold_labels() |> modify_header(label ~ "**Characteristic**")`
+table_01 |>
+  select(-pid, -sex) |>
+  tbl_summary(
+    by = arm,
+    statistic = list(age ~ "{mean} ({sd})")
+  ) |>
+  add_p(test = list(age ~ "t.test")) |>
+  add_overall() |>
+  bold_labels() |>
+  modify_header(label ~ "**Characteristic**")
+
 ```
 
 ## Part 3 — Reach (optional)
@@ -81,4 +105,13 @@ table_01 |>
 ```{r}
 # reach: same table, but by = smoker instead of by = arm
 # what question is this table now answering?
-```
+table_01 |>
+select(-pid, -sex) |>
+tbl_summary(
+  by = smoker,
+  statistic = list(age ~ "{mean} ({sd})")
+) |>
+add_p(test = list(age ~ "t.test")) |>
+add_overall() |>
+bold_labels() |>
+modify_header(label ~ "**Characteristic**")

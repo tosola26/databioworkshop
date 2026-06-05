@@ -1,0 +1,263 @@
+---
+title: "Yogurt Study — Data Dictionary"
+subtitle: "Group A: Understanding the effect of yogurt consumption on the vaginal microbiome after antibiotic treatment"
+author: "Workshop Participant"
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+---
+
+## Overview
+
+This dataset comes from a study looking at whether eating yogurt can help
+restore the vaginal microbiome after antibiotics. Participants were assigned
+to either a **yogurt** group (who ate yogurt daily) or an **unchanged diet**
+group (who didn't change their eating habits).
+
+Samples were collected at two time points:
+
+- **Baseline** — before antibiotics
+- **After antibiotic** — after a course of antibiotics
+
+There are four CSV files. Below we load them and describe what each one
+contains.
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+
+# Helper to read a file and show a clean summary
+read_and_describe <- function(path) {
+  df <- read_csv(path, show_col_types = FALSE)
+  cat("\nRows:", nrow(df), "  Columns:", ncol(df), "\n")
+  glimpse(df)
+  invisible(df)
+}
+
+data_dir <- "../group_a_yogurt"
+```
+
+---
+
+## File 1: `00_sample_ids_yogurt.csv`
+
+**What one row represents:** a single sample collected from one participant
+at one time point.
+
+Each participant may appear twice (once at baseline, once after antibiotics)
+because they contributed one sample at each time point.
+
+```{r}
+#| label: load-sample-ids
+sample_ids <- read_and_describe(file.path(data_dir, "00_sample_ids_yogurt.csv"))
+```
+
+| Column | Type | What it means |
+|--------|------|---------------|
+| `pid` | character | Participant ID (e.g. `pid_25`). Links to the metadata file. |
+| `time_point` | character | When the sample was taken: `baseline` (before antibiotics) or `after_antibiotic` (after antibiotics). |
+| `arm` | character | Which group the participant was in: `yogurt` (ate yogurt daily) or `unchanged_diet` (no change). |
+| `sample_id` | character | Unique sample ID. Codes starting with `UNCH` are from the unchanged-diet arm; codes starting with `YOG` are from the yogurt arm. This is the key used to link to qPCR and Luminex results. |
+
+---
+
+## File 2: `01_participant_metadata_yogurt.csv`
+
+**What one row represents:** one participant enrolled in the study.
+
+There are 51 unique participants. Each participant appears exactly once here.
+
+```{r}
+#| label: load-metadata
+metadata <- read_and_describe(file.path(data_dir, "01_participant_metadata_yogurt.csv"))
+```
+
+| Column | Type | What it means |
+|--------|------|---------------|
+| `pid` | character | Participant ID — matches the same IDs in `sample_ids`. |
+| `arm` | character | Group assignment: `yogurt` or `unchanged_diet`. |
+| `days_since_last_sex` | double | Number of days since the participant last had sexual intercourse at the time of the baseline visit. |
+| `birth_control` | character | Type of birth control used: `no hormonal birth control`, `Depoprovera` (an injectable hormonal contraceptive). |
+| `age` | double | Participant's age in years. |
+| `education` | character | Highest education level completed: `less than grade 9`, `grade 10-12, not matriculated`, `grade 10-12, matriculated`, or `post-secondary`. |
+| `sex` | character | All participants are recorded as `female`. |
+
+---
+
+## File 3: `02_qpcr_results_yogurt.csv`
+
+**What one row represents:** the qPCR (quantitative PCR) measurements for
+one sample. qPCR is a lab technique that measures how much of a specific
+bacterium's DNA is present.
+
+```{r}
+#| label: load-qpcr
+qpcr <- read_and_describe(file.path(data_dir, "02_qpcr_results_yogurt.csv"))
+```
+
+| Column | Type | What it means |
+|--------|------|---------------|
+| `sample_id` | character | Sample ID — links to `sample_ids`. |
+| `qpcr_bacteria` | double | Total bacterial DNA measured, in **copies per mL** (or equivalent unit). A higher number means more bacteria overall. |
+| `qpcr_crispatus` | double | DNA measure specifically for *Lactobacillus crispatus*, a "good" bacterium often linked to vaginal health. In **copies per mL**. A value of 0 means it was not detected. |
+| `qpcr_iners` | double | DNA measure specifically for *Lactobacillus iners*, another common vaginal *Lactobacillus* species. In **copies per mL**. |
+
+> **Note:** *L. crispatus* is generally considered beneficial for vaginal
+> health, while *L. iners* is sometimes associated with a less stable
+> microbiome. You may want to compare how these change between baseline
+> and after antibiotics across the two arms.
+
+---
+
+## File 4: `03_luminex_results_yogurt.csv`
+
+**What one row represents:** the concentration of **one cytokine** measured
+in **one sample**. This is "long" (tidy) format — each sample has 10 rows,
+one per cytokine measured.
+
+Cytokines are small proteins released by immune cells that act as chemical
+messengers. They help us understand the immune / inflammatory state at the
+sampling site.
+
+```{r}
+#| label: load-luminex
+luminex <- read_and_describe(file.path(data_dir, "03_luminex_results_yogurt.csv"))
+```
+
+```{r}
+#| label: list-cytokines
+cat("Unique cytokines measured:", 
+    paste(unique(luminex$cytokine), collapse = ", "))
+```
+
+| Column | Type | What it means |
+|--------|------|---------------|
+| `sample_id` | character | Sample ID — links to `sample_ids`. |
+| `cytokine` | character | Name of the cytokine or chemokine being measured. There are 10 different ones (see list above). |
+| `conc` | double | Measured concentration, in **pg/mL** (picograms per millilitre). |
+| `limits` | character | Whether the concentration was within the detectable range of the assay: `within limits` means it was measurable, `out of range` means it was below or above the assay's detection limits (so the number might not be fully reliable). |
+
+### What each cytokine generally tells you
+
+| Cytokine | Role (simplified) |
+|----------|-------------------|
+| **IL-1a** | Pro-inflammatory — signals tissue damage or infection |
+| **IL-1b** | Pro-inflammatory — one of the first signals in an immune response |
+| **IL-6** | Pro- and anti-inflammatory — involved in fever and immune activation |
+| **IL-8** | Chemokine — recruits immune cells to the site of infection |
+| **IL-10** | Anti-inflammatory — helps calm down immune responses |
+| **TNFa** | Pro-inflammatory — a major "alarm" cytokine |
+| **IFN-Y** | Pro-inflammatory — important for fighting viral and bacterial infections |
+| **IP-10** | Chemokine — attracts immune cells; often high during inflammation |
+| **MIG** | Chemokine — similar to IP-10, attracts immune cells |
+| **MIP-3a** | Chemokine — helps guide immune cells to tissues |
+
+---
+
+## How the files connect
+
+Here's a visual of how the files relate to each other — a simple relational
+"schema":
+
+```{r}
+#| label: schema-drawing
+#| echo: false
+cat("
+  01_participant_metadata     00_sample_ids
+  ┌──────────────────┐        ┌──────────────────┐
+  │ pid (primary key)│◄───────│ pid (foreign key) │
+  │                  │        │ sample_id (PK)   │
+  └──────────────────┘        └───────┬──────────┘
+                                      │
+                         ┌────────────┼────────────┐
+                         │            │            │
+                         ▼            ▼            ▼
+              ┌─────────────────┐ ┌─────────────────────┐
+              │ 02_qpcr_results │ │ 03_luminex_results  │
+              │ sample_id (FK)  │ │ sample_id (FK)      │
+              └─────────────────┘ └─────────────────────┘
+")
+```
+
+**To combine them in R**, you would join on `pid` (for metadata ↔ samples)
+or on `sample_id` (for samples ↔ qPCR / Luminex). Here's an example:
+
+```{r}
+#| label: example-join
+#| eval: false
+# Combine sample info with metadata
+full_data <- sample_ids %>%
+  left_join(metadata, by = "pid") %>%
+  left_join(qpcr, by = "sample_id") %>%
+  left_join(luminex, by = "sample_id")
+
+head(full_data)
+```
+
+---
+
+## Quick exploration ideas
+
+Here are a few small things you might try to get familiar with the data:
+
+```{r}
+#| label: explore-1
+# How many participants in each arm?
+sample_ids |> 
+  distinct(pid, arm) |> 
+  count(arm)
+```
+
+```{r}
+#| label: explore-2
+# Age range of participants
+summary(metadata$age)
+```
+
+```{r}
+#| label: explore-3
+# Which cytokines are most often out of range?
+luminex |> 
+  count(cytokine, limits) |> 
+  filter(limits == "out of range") |> 
+  arrange(desc(n))
+```
+
+```{r}
+#| label: explore-4
+# Compare total bacteria between arms and time points
+sample_ids %>%
+  left_join(qpcr, by = "sample_id") %>%
+  group_by(arm, time_point) %>%
+  summarise(
+    mean_bacteria = mean(qpcr_bacteria, na.rm = TRUE),
+    sd_bacteria = sd(qpcr_bacteria, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+```{r}
+#| label: plot-bacteria
+#| fig-width: 8
+#| fig-height: 5
+#| message: false
+# Boxplot: total bacteria by arm and time point
+sample_ids %>%
+  left_join(qpcr, by = "sample_id") %>%
+  ggplot(aes(x = interaction(arm, time_point, sep = "\n"),
+             y = qpcr_bacteria, fill = arm)) +
+  geom_boxplot(alpha = 0.6) +
+  scale_y_log10(labels = scales::label_comma()) +
+  labs(
+    x = NULL,
+    y = "Total bacteria (copies / mL, log scale)",
+    title = "Total bacteria by arm and time point",
+    fill = "Arm"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold")) +
+  scale_fill_manual(values = c("yogurt" = "#E69F00", "unchanged_diet" = "#56B4E9"))
+```
